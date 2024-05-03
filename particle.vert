@@ -8,14 +8,17 @@ in vec2 p3d_MultiTexCoord0;
 in vec3 position;
 in vec3 scale;
 in vec3 velocity;
+in vec4 particle_color;
 
 uniform float elapsed_time;
 uniform vec3 gravity;
 
 out vec2 texcoord;
+out vec4 new_color;
 
 void main() {
-    
+    new_color = particle_color;
+
     vec3 v = p3d_Vertex.xyz * scale;
     
     texcoord = p3d_MultiTexCoord0;

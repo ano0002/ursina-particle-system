@@ -14,18 +14,17 @@ class Particle:
     position: Vec3
     scale: Vec3
     velocity: Vec3
+    color: Vec4
 
 class ParticleManager(Entity):
     max_particles = 100000
 
-    def __init__(self, **kwargs):
+    def __init__(self,gravity=Vec3(0,-9.8,0),particles=[], **kwargs):
         super().__init__(model='quad',billboard=True, shader=particle_shader)
         
-        self.particles = list()
         self.elapsed_time = 0
-        self.gravity = Vec3(0, -10, 0)
-    
-        self.particles = list()
+        self.gravity = gravity    
+        self.particles = particles
 
         for key,value in kwargs.items():
             setattr(self, key, value)
@@ -44,6 +43,7 @@ class ParticleManager(Entity):
             self.iformat.addColumn("position", 3, Geom.NT_stdfloat, Geom.C_vector)
             self.iformat.addColumn("scale", 3, Geom.NT_stdfloat, Geom.C_vector)
             self.iformat.addColumn("velocity", 3, Geom.NT_stdfloat, Geom.C_vector)
+            self.iformat.addColumn("particle_color", 4, Geom.NT_stdfloat, Geom.C_vector)
 
             self.vformat = GeomVertexFormat(self.geom_node.getGeom(0).getVertexData().getFormat())
             self.vformat.addArray(self.iformat)
@@ -73,12 +73,14 @@ class ParticleManager(Entity):
         position_i = GeomVertexWriter(self.vdata, 'position')
         scale_i = GeomVertexWriter(self.vdata, 'scale')
         velocity_i = GeomVertexWriter(self.vdata, 'velocity')
+        color_i = GeomVertexWriter(self.vdata, 'particle_color')
 
         for i in range(to_generate):
             particle = self.particles[i]
             position_i.add_data3(*particle.position)
             scale_i.add_data3(*particle.scale)
             velocity_i.add_data3(*particle.velocity)
+            color_i.add_data4(*particle.color)
 
         self.set_instance_count(to_generate)
 
@@ -88,15 +90,16 @@ class ParticleManager(Entity):
 
 def generate_particle():
     return Particle(
-        position = Vec3(random.random()*50-25,0,random.random()*50-25),
+        position = Vec3(random.random()*5-2.5,random.random()*.5,random.random()*5-2.5),
         scale = Vec3(random.random()*0.5+0.5),
-        velocity = Vec3(random.random()*5-2.5,random.random()*10,random.random()*5-2.5)
+        velocity = Vec3(random.random()*5-2.5,random.random()*10,random.random()*5-2.5),
+        color = Vec4(random.random(),random.random(),random.random(),0)*.2+color.orange
     )
 
 def generate_particles(n):
     return [generate_particle() for _ in range(n)]
 
-manager = ParticleManager(texture="particle",scale=1, color=color.red,particles=generate_particles(10000))
+manager = ParticleManager(texture="particle",scale=1,particles=generate_particles(10000),gravity=Vec3(0,1,0),position=Vec3(0,-3,0))
 
 EditorCamera()
 
