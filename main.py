@@ -12,7 +12,6 @@ particle_shader=Shader(name='particle_shader', language=Shader.GLSL, vertex=open
 @dataclass
 class Particle:
     position: Vec3
-    rotation: Vec3
     scale: Vec3
     velocity: Vec3
 
@@ -20,7 +19,7 @@ class ParticleManager(Entity):
     max_particles = 100000
 
     def __init__(self, **kwargs):
-        super().__init__(model='cube', scale=0.1, color=color.red,shader=particle_shader)
+        super().__init__(model='quad',billboard=True, shader=particle_shader)
         
         self.particles = list()
         self.elapsed_time = 0
@@ -43,7 +42,6 @@ class ParticleManager(Entity):
             self.iformat = GeomVertexArrayFormat()
             self.iformat.setDivisor(1)
             self.iformat.addColumn("position", 3, Geom.NT_stdfloat, Geom.C_vector)
-            self.iformat.addColumn("rotation", 4, Geom.NT_stdfloat, Geom.C_vector)
             self.iformat.addColumn("scale", 3, Geom.NT_stdfloat, Geom.C_vector)
             self.iformat.addColumn("velocity", 3, Geom.NT_stdfloat, Geom.C_vector)
 
@@ -52,15 +50,10 @@ class ParticleManager(Entity):
             self.vformat = GeomVertexFormat.registerFormat(self.vformat)
 
             self.vdata = self.geom_node.modifyGeom(0).modifyVertexData()
-            for col in self.vdata.getFormat().getColumns():
-                print(col.getName(), col.getNumericType(), col.getContents())
             self.vdata.setFormat(self.vformat)
 
             if self.vdata.getFormat() != self.vformat:
                 raise Exception("Vertex data format mismatch")
-            
-            self.last_cam_pos = camera.world_position
-            self.last_pos = self.world_position
 
             self.apply()
         else:
@@ -78,16 +71,12 @@ class ParticleManager(Entity):
         self.vdata.setNumRows(to_generate)
 
         position_i = GeomVertexWriter(self.vdata, 'position')
-        rotation_i = GeomVertexWriter(self.vdata, 'rotation')
         scale_i = GeomVertexWriter(self.vdata, 'scale')
         velocity_i = GeomVertexWriter(self.vdata, 'velocity')
 
         for i in range(to_generate):
             particle = self.particles[i]
             position_i.add_data3(*particle.position)
-            quat = Quat()
-            quat.set_hpr(particle.rotation)
-            rotation_i.add_data4(*quat)
             scale_i.add_data3(*particle.scale)
             velocity_i.add_data3(*particle.velocity)
 
@@ -100,7 +89,6 @@ class ParticleManager(Entity):
 def generate_particle():
     return Particle(
         position = Vec3(random.random()*50-25,0,random.random()*50-25),
-        rotation = Vec3(0,0,0),
         scale = Vec3(random.random()*0.5+0.5),
         velocity = Vec3(random.random()*5-2.5,random.random()*10,random.random()*5-2.5)
     )
@@ -108,9 +96,7 @@ def generate_particle():
 def generate_particles(n):
     return [generate_particle() for _ in range(n)]
 
-print("Generating particles")
-
-manager = ParticleManager(particles=generate_particles(100000))
+manager = ParticleManager(texture="particle",scale=1, color=color.red,particles=generate_particles(10000))
 
 EditorCamera()
 
